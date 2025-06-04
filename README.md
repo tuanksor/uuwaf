@@ -1,28 +1,32 @@
 # UUWAF Operator
 
-A Kubernetes operator that monitors UUWAF audit database and automatically reloads configurations when changes are detected.
+A Kubernetes operator that monitors the UUWAF audit database and reloads configurations when changes are detected.
 
 ## Features
 
-- **Real-time Monitoring**: Monitors UUWAF audit database for configuration changes
-- **Automatic Reload**: Automatically reloads UUWAF configurations when changes are detected
-- **Structured Logging**: Uses Zap for structured logging with proper log levels
-- **Metrics**: Exposes Prometheus metrics for monitoring
-- **Graceful Shutdown**: Proper handling of SIGTERM and SIGINT signals
-- **Connection Pooling**: Efficient database connection management
-- **Configuration Management**: Flexible configuration through environment variables
+- Real-time monitoring of UUWAF audit database
+- Automatic reload of configurations on Kubernetes pods
+- Structured logging with zap
+- Prometheus metrics for monitoring
+- Graceful shutdown handling
+- Connection pooling for database operations
+- Flexible configuration management
 
 ## Prerequisites
 
 - Kubernetes cluster
 - MySQL/MariaDB database
 - Go 1.21 or later
+- Docker
+- kubectl
 
 ## Installation
 
+### Building from Source
+
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/operator-uuwaf.git
+git clone https://github.com/your-org/operator-uuwaf.git
 cd operator-uuwaf
 ```
 
@@ -33,94 +37,111 @@ go mod download
 
 3. Build the operator:
 ```bash
-go build -o uuwaf-operator
+go build -o operator-uuwaf
+```
+
+### Building with Docker
+
+1. Build the Docker image:
+```bash
+docker build -t your-registry/uuwaf-operator:latest .
+```
+
+2. Push the image to your registry:
+```bash
+docker push your-registry/uuwaf-operator:latest
 ```
 
 ## Configuration
 
 The operator can be configured using environment variables:
 
-| Environment Variable | Description | Default |
-|---------------------|-------------|---------|
-| MYSQL_USER | Database username | (required) |
-| MYSQL_PASSWORD | Database password | (required) |
-| MYSQL_HOST | Database host | (required) |
-| MYSQL_PORT | Database port | 3306 |
-| MYSQL_DATABASE | Database name | (required) |
-| POD_NAMESPACE | Kubernetes namespace | uusec |
+| Variable | Description | Default |
+|----------|-------------|---------|
+| MYSQL_HOST | MySQL host address | localhost |
+| MYSQL_PORT | MySQL port | 3306 |
+| MYSQL_USER | MySQL username | root |
+| MYSQL_PASSWORD | MySQL password | password |
+| MYSQL_DATABASE | MySQL database name | uuwaf |
+| METRICS_PORT | Port for Prometheus metrics | 8080 |
 
 ## Deployment
 
-1. Create a Kubernetes secret for database credentials:
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: uuwaf-db-secret
-type: Opaque
-data:
-  MYSQL_USER: <base64-encoded-username>
-  MYSQL_PASSWORD: <base64-encoded-password>
+### Kubernetes Deployment
+
+1. Create a namespace (optional):
+```bash
+kubectl create namespace uuwaf
 ```
 
-2. Deploy the operator:
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: uuwaf-operator
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: uuwaf-operator
-  template:
-    metadata:
-      labels:
-        app: uuwaf-operator
-    spec:
-      containers:
-      - name: operator
-        image: your-registry/uuwaf-operator:latest
-        envFrom:
-        - secretRef:
-            name: uuwaf-db-secret
-        env:
-        - name: MYSQL_HOST
-          value: "your-db-host"
-        - name: MYSQL_DATABASE
-          value: "uuwaf"
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
+2. Create the database secret:
+```bash
+kubectl create secret generic uuwaf-db-secret \
+  --from-literal=MYSQL_USER=root \
+  --from-literal=MYSQL_PASSWORD=your-password \
+  -n uuwaf
+```
+
+3. Deploy the operator:
+```bash
+kubectl apply -f deploy/kubernetes/deployment.yaml
+```
+
+4. Verify the deployment:
+```bash
+kubectl get pods -n uuwaf
+kubectl logs -f deployment/uuwaf-operator -n uuwaf
+```
+
+### Local Development
+
+1. Install dependencies:
+```bash
+go mod download
+```
+
+2. Run the operator:
+```bash
+go run main.go
 ```
 
 ## Monitoring
 
-The operator exposes Prometheus metrics at `/metrics` endpoint. Available metrics:
+### Prometheus Metrics
 
-- `uuwaf_audit_events_processed_total`: Number of processed audit events
-- `uuwaf_pod_reloads_total`: Number of pod reloads (success/failure)
-- `uuwaf_processing_duration_seconds`: Time taken to process events
-- `uuwaf_last_processed_id`: ID of the last processed audit event
+The operator exposes Prometheus metrics on port 8080. You can access them at:
+```
+http://localhost:8080/metrics
+```
 
-## Logging
+Available metrics:
+- `uuwaf_audit_events_total`: Total number of audit events processed
+- `uuwaf_pod_reloads_total`: Total number of pod reloads
+- `uuwaf_pod_reload_errors_total`: Total number of pod reload errors
+- `uuwaf_db_connection_errors_total`: Total number of database connection errors
 
-The operator uses structured logging with Zap. Log levels can be configured through the `LOG_LEVEL` environment variable.
+### Logging
 
-Example log output:
+The operator uses structured logging with zap. Example log output:
 ```json
-{"level":"info","ts":1234567890,"msg":"Starting monitoring","lastID":0}
-{"level":"info","ts":1234567891,"msg":"New event found","id":123,"type":"Site","info":"site-config-changed"}
+{"level":"info","ts":1647123456.789,"msg":"Starting UUWAF operator","version":"1.0.0"}
+{"level":"info","ts":1647123456.790,"msg":"Connected to database","host":"localhost","port":3306}
 ```
 
 ## Development
 
-1. Install development dependencies:
+### Prerequisites
+
+- Go 1.21 or later
+- Docker
+- kubectl
+- make (optional)
+
+### Setup
+
+1. Install dependencies:
 ```bash
-go get -u github.com/prometheus/client_golang/prometheus
-go get -u go.uber.org/zap
+go mod download
 ```
 
 2. Run tests:
@@ -128,9 +149,25 @@ go get -u go.uber.org/zap
 go test ./...
 ```
 
-3. Build and run locally:
+3. Build locally:
 ```bash
-go run main.go
+go build -o operator-uuwaf
+```
+
+### Docker Development
+
+1. Build the development image:
+```bash
+docker build -t uuwaf-operator:dev .
+```
+
+2. Run the container:
+```bash
+docker run -it --rm \
+  -e MYSQL_HOST=host.docker.internal \
+  -e MYSQL_USER=root \
+  -e MYSQL_PASSWORD=password \
+  uuwaf-operator:dev
 ```
 
 ## Contributing
@@ -141,9 +178,6 @@ go run main.go
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Authors
 
@@ -151,6 +185,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- Kubernetes client-go library
-- Prometheus client library
-- Zap logging library 
+- Thanks to all contributors
+- Inspired by the Kubernetes Operator pattern 
