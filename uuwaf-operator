@@ -1,0 +1,10 @@
+# Author: Nguyen Anh Tuan
+# Email: tuan.gli@gmail.com
+# Description: Environment configuration for UUWAF Operator
+
+MYSQL_USER=[dbuser]
+MYSQL_PASSWORD=[dbpass]
+MYSQL_HOST=[dbhost]
+MYSQL_PORT=3306
+MYSQL_DATABASE=[dbname]
+POD_NAMESPACE=[podnamespace] 

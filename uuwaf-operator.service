@@ -1,0 +1,19 @@
+# Author: Nguyen Anh Tuan
+# Email: tuan.gli@gmail.com
+# Description: Systemd service file for UUWAF Operator
+
+[Unit]
+Description=UUWAF Operator Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/uuwaf-operator
+ExecStart=/opt/uuwaf-operator/uuwaf-operator
+Restart=always
+RestartSec=10
+EnvironmentFile=/etc/sysconfig/uuwaf-operator
+
+[Install]
+WantedBy=multi-user.target 
