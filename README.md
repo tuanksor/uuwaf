@@ -81,8 +81,8 @@ The operator can be configured through environment variables in `/etc/sysconfig/
 
 ```ini
 MYSQL_USER=root
-MYSQL_PASSWORD=Safe3.WAF
-MYSQL_HOST=proxysqlcluster.sqlrouting.svc.cluster.tenten
+MYSQL_PASSWORD=<password>
+MYSQL_HOST=<ip or domain>
 MYSQL_PORT=3306
 MYSQL_DATABASE=uuwaf
 POD_NAMESPACE=uusec
