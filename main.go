@@ -37,9 +37,9 @@ func main() {
 	dbName := os.Getenv("MYSQL_DATABASE")
 
 	if dbUser == "" || dbPass == "" || dbHost == "" || dbPort == "" || dbName == "" {
-		dbUser = "root"
-		dbPass = "Safe3.WAF"
-		dbHost = "proxysqlcluster.sqlrouting.svc.cluster.tenten"
+		dbUser = "<user>"
+		dbPass = "<password>"
+		dbHost = "<ip or domain>"
 		dbPort = "3306"
 		dbName = "uuwaf"
 	}
